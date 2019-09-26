@@ -12,10 +12,17 @@ BOM_data
 
 BOM_stations
 
-Seperated_Temp <- BOM_data %>% 
-  separate(BOM_data, col = Temp_min_max, into = c("Temp_min", "Temp_Max")) %>% 
-  filter(Temp_min_max == "-/-") %>% 
-  group_by() %>% 
-  summarise() %>% 
- 
+
+#Challenge 1
+##Question 1: For each station, how many days have a minimum temperature, a maximum temperature and a rainfall measurement recorded?
+
+seperated_temp <- BOM_data %>% 
+  separate(BOM_data, col = Temp_min_max, into = c("Temp_min", "Temp_Max"), sep ="/") %>% 
+  filter(Temp_min != "-", Temp_max != "-", Rainfall != 0) %>% 
+  group_by(station_number) %>% 
+  summarise(n = n())
+
+
+  
+
 
