@@ -26,13 +26,12 @@ Challenge1 <-
   select(-Solar_exposure) %>% 
   mutate(date_identifier = Year + Month + Day) %>% 
   arrange(date_identifier) %>% 
-  summarise(n_days = n_distinc(date_identifier))
+  summarise(n_days = n_distinct(date_identifier))
 
 
+#answer is 200
 
 
-
-#answer is ! 
 
 #Challenge 2
 #Which month saw the lowest average daily temperature difference?
