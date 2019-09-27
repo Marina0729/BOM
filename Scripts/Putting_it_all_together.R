@@ -17,15 +17,22 @@ BOM_stations
 #Question 1: For each station, how many days have a minimum temperature, a maximum temperature and a rainfall measurement recorded?
 
  
-BOM_data %>% 
+Challenge1 <- 
+  BOM_data %>% 
   separate(col = Temp_min_max, into = c("Temp_min", "Temp_max"), sep ="/") %>% 
   filter(Temp_min != "-") %>% 
   filter(Temp_max !="-") %>% 
-  filter(Rainfall != 0) %>% 
-  group_by(Station_number) %>% 
-  summarise(n = n())
+  filter(Rainfall != 0) %>%
+  select(-Solar_exposure) %>% 
+  mutate(date_identifier = Year + Month + Day) %>% 
+  arrange(date_identifier) %>% 
+  summarise(n_days = n_distinc(date_identifier))
 
-#answer is 20! 
+
+
+
+
+#answer is ! 
 
 #Challenge 2
 #Which month saw the lowest average daily temperature difference?
