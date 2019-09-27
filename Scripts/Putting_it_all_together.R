@@ -12,11 +12,9 @@ BOM_data
 
 BOM_stations
 
-
 #Challenge 1
 #Question 1: For each station, how many days have a minimum temperature, a maximum temperature and a rainfall measurement recorded?
 
- 
 Challenge1 <- 
   BOM_data %>% 
   separate(col = Temp_min_max, into = c("Temp_min", "Temp_max"), sep ="/") %>% 
@@ -25,11 +23,20 @@ Challenge1 <-
   filter(Rainfall != 0) %>%
   select(-Solar_exposure) %>% 
   mutate(date_identifier = Year + Month + Day) %>% 
-  arrange(date_identifier) %>% 
+  group_by(Station_number) %>% 
   summarise(n_days = n_distinct(date_identifier))
 
+#Steps taken 
+#1. Separate Temp_min_max into two separate columns 
+#2. Remove rows in Temp_min and Temp_max containing "-" 
+#3. Remove rows in Rainfall containing 0
+#4. Create a new column to assign each day a unique number 
+#since I don't know if more than one measurement was taken in one
+#day
+#5. Take existing tbl and reduce it to per station
+#6. 
 
-#answer is 200
+
 
 
 
