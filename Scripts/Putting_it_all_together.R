@@ -144,13 +144,22 @@ Station_number_Mean_temp_diff <-
   
 BOM_stations
 
-Station_number_State <- 
+Station_number_state <- 
   BOM_stations %>% 
   filter(info == "state") %>% 
-  gather("Station_number", "state") %>% 
-  filter(Station_number != "info") %>% 
-  mutate(as.numeric("Station_number"))
+  gather(Station_number, state, 2:21) %>% 
+  select(-info) %>% 
+  mutate(Station_number_numeric = as.numeric(Station_number)) %>% 
+  select(-Station_number)
 
-#Trying to change "Station_number" into (dbl)???????
+names(Station_number_Mean_temp_diff)[1]<-"Station_number_numeric"
 
-full_join(Station_number_State, Station_number_Mean_temp_diff, by = "Station_number")
+Challenge3 <- 
+  full_join(Station_number_state, Station_number_Mean_temp_diff, by = "Station_number_numeric") %>%
+  group_by(state) %>% 
+  summarise(Mean_temp_diff = mean(Mean_temp_diff)) %>% 
+  arrange(Mean_temp_diff)
+  
+write_csv(Challenge3,"Results/Challenge3.csv") 
+
+#Answer is Victoria!
