@@ -163,3 +163,33 @@ Challenge3 <-
 write_csv(Challenge3,"Results/Challenge3.csv") 
 
 #Answer is Victoria!
+
+#Challenge 4
+#Does the westmost (lowest longitude) or eastmost (highest longitude) 
+#weather station in our dataset have a higher average solar exposure?
+
+Station_number_Mean_Solar_exposure <- 
+  BOM_data %>% 
+  select(Station_number, Solar_exposure) %>% 
+  filter(Solar_exposure != "-") %>% 
+  mutate(Solar_exposure_numeric = as.numeric(Solar_exposure)) %>% 
+  group_by(Station_number) %>% 
+  summarise(Mean_Solar_exposure = mean(Solar_exposure_numeric))
+
+Station_number_lon <- 
+  BOM_stations %>% 
+  filter(info == "lon") %>% 
+  gather(Station_number, lon, 2:21) %>% 
+  select(-info) %>% 
+  mutate(Station_number_numeric = as.numeric(Station_number)) %>% 
+  select(-Station_number)
+
+names(Station_number_Mean_Solar_exposure)[1]<-"Station_number_numeric"
+
+Challenge4 <- 
+  inner_join(Station_number_lon, Station_number_Mean_Solar_exposure, by = "Station_number_numeric") %>%
+  arrange(lon, Mean_Solar_exposure)
+
+View(Challenge4)
+
+#Answer is eastmost!
