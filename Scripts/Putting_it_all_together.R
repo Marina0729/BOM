@@ -66,6 +66,8 @@ Challenge1_2 <-
   select(-Solar_exposure) %>% 
   group_by(Station_number) %>% 
   count(Station_number, Station_number)
+
+write_csv(Challenge1_2,"Results/Challenge1_2.csv") 
   
 #Same answer! This suggests there is one row per day. Let's test this using
 #group_by(Date) and see how many observations there are in the tibble.
@@ -106,36 +108,49 @@ Check_station_86344 <-
 
 #Yes
 
+
 #Challenge 2
 #Which month saw the lowest average daily temperature difference?
 
 BOM_data %>% 
   separate(col = Temp_min_max, into = c("Temp_min", "Temp_max"), sep ="/") %>% 
   filter(Temp_min != "-") %>% 
-  filter(Temp_max !="-") %>% 
-  filter(Rainfall != 0) %>% 
+  filter(Temp_max != "-") %>% 
+  filter(Rainfall != "-") %>% 
+  select(-Solar_exposure) %>%
   group_by(Month) %>% 
   mutate(Temp_diff = as.numeric(Temp_max) - as.numeric(Temp_min)) %>% 
   summarise(Mean_temp_diff = mean(Temp_diff)) %>% 
   arrange(Mean_temp_diff)
 
-#Answer = 6!
+#Answer = 6, or June
+
+
 
 #Challenge 3
 #Which state saw the lowest average daily temperature difference?
-Tidy_BOM_data <- BOM_data %>% 
+
+Station_number_Mean_temp_diff <- 
+  BOM_data %>% 
   separate(col = Temp_min_max, into = c("Temp_min", "Temp_max"), sep ="/") %>% 
   filter(Temp_min != "-") %>% 
-  filter(Temp_max !="-") %>% 
-  filter(Rainfall != 0) %>% 
+  filter(Temp_max != "-") %>% 
+  select(-Rainfall) %>% 
+  select(-Solar_exposure) %>%
   mutate(Temp_diff = as.numeric(Temp_max) - as.numeric(Temp_min)) %>% 
-  select(Station_number, Temp_diff) %>% 
-  mutate(Station_number = as.numeric(Station_number))
+  group_by(Station_number) %>% 
+  summarise(Mean_temp_diff = mean(Temp_diff)) %>% 
+  arrange(Station_number)
+  
+BOM_stations
 
-Tidy_BOM_data
+Station_number_State <- 
+  BOM_stations %>% 
+  filter(info == "state") %>% 
+  gather("Station_number", "state") %>% 
+  filter(Station_number != "info") %>% 
+  mutate(as.numeric("Station_number"))
 
-State_BOM_Stations <- BOM_stations %>%
-  gather(Station_number, value, -info) %>% 
-  filter(info == "state")
+#Trying to change "Station_number" into (dbl)???????
 
-inner_join(State_BOM_Stations, Tidy_BOM_data, by = "Station_number")
+full_join(Station_number_State, Station_number_Mean_temp_diff, by = "Station_number")
