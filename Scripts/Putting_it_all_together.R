@@ -192,4 +192,4 @@ Challenge4 <-
 
 View(Challenge4)
 
-#Answer is eastmost!
+#Answer is eastmost, by a whistle!
