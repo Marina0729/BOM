@@ -89,8 +89,8 @@ Check_number_rows_after_filtering <-
   separate(col = Temp_min_max, into = c("Temp_min", "Temp_max"), sep ="/") %>% 
   filter(Temp_min != "-") %>% 
   filter(Temp_max != "-") %>% 
-  filter(Rainfall != "-") %>%
-  group_by(Day)
+  filter(Rainfall != "-")
+  
 
 #There are 28340 obs. in this tibble
 
@@ -112,14 +112,17 @@ Check_station_86344 <-
 #Challenge 2
 #Which month saw the lowest average daily temperature difference?
 
+#Create a data frame with new column Temp_diff
 BOM_data %>% 
   separate(col = Temp_min_max, into = c("Temp_min", "Temp_max"), sep ="/") %>% 
   filter(Temp_min != "-") %>% 
   filter(Temp_max != "-") %>% 
   filter(Rainfall != "-") %>% 
   select(-Solar_exposure) %>%
-  group_by(Month) %>% 
+  select(-Rainfall) %>% 
   mutate(Temp_diff = as.numeric(Temp_max) - as.numeric(Temp_min)) %>% 
+#summarise to Mean_temp_diff by Month
+  group_by(Month) %>% 
   summarise(Mean_temp_diff = mean(Temp_diff)) %>% 
   arrange(Mean_temp_diff)
 
@@ -130,6 +133,7 @@ BOM_data %>%
 #Challenge 3
 #Which state saw the lowest average daily temperature difference?
 
+#First get Mean_temp_diff for each station number 
 Station_number_Mean_temp_diff <- 
   BOM_data %>% 
   separate(col = Temp_min_max, into = c("Temp_min", "Temp_max"), sep ="/") %>% 
@@ -139,10 +143,13 @@ Station_number_Mean_temp_diff <-
   select(-Solar_exposure) %>%
   mutate(Temp_diff = as.numeric(Temp_max) - as.numeric(Temp_min)) %>% 
   group_by(Station_number) %>% 
-  summarise(Mean_temp_diff = mean(Temp_diff)) %>% 
-  arrange(Station_number)
+  summarise(Mean_temp_diff = mean(Temp_diff))
+  
   
 BOM_stations
+#Want to extract station number and state from this data frame. 
+#This data frame is too wide, want to "gather" to fewer columns. 
+#Also need to create a new column with numeric station number values
 
 Station_number_state <- 
   BOM_stations %>% 
@@ -152,8 +159,12 @@ Station_number_state <-
   mutate(Station_number_numeric = as.numeric(Station_number)) %>% 
   select(-Station_number)
 
+#Station_number_Mean_temp_diff data frame needs same column name to join
+
 names(Station_number_Mean_temp_diff)[1]<-"Station_number_numeric"
 
+#Join the two data frames Station_number_numeric then group by state and
+#summarise 
 Challenge3 <- 
   full_join(Station_number_state, Station_number_Mean_temp_diff, by = "Station_number_numeric") %>%
   group_by(state) %>% 
