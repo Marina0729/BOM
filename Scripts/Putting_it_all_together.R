@@ -315,11 +315,26 @@ tidy_data_q1 <- BOM_data %>%
 
 
 plot_Temp_min <- ggplot(data = tidy_data_q1,
-                mapping = aes(x = Temp_max, y = Temp_min)) + geom_point(alpha = 0.2)
+                mapping = aes(x = Temp_max, y = Temp_min)) + 
+  geom_point(alpha = 0.1) +
+  theme(axis.title = element_text(size = 5), 
+        axis.text.x = element_text(size = 5), 
+        axis.text.y = element_text(size = 5))
+
 plot_Rainfall <- ggplot(data = tidy_data_q1,
-                mapping = aes(x = Temp_max, y = Rainfall)) + geom_point(alpha = 0.2) 
+                mapping = aes(x = Temp_max, y = Rainfall)) + 
+  geom_point(alpha = 0.1) + 
+  theme(axis.title = element_text(size = 5),
+        axis.text.x = element_text(size = 5), 
+        axis.text.y = element_text(size = 5))
+
 plot_Solar_exposure <- ggplot(data = tidy_data_q1,
-                mapping = aes(x = Temp_max, y = Solar_exposure)) + geom_point(alpha = 0.2)
+                mapping = aes(x = Temp_max, y = Solar_exposure)) + 
+  geom_point(alpha = 0.1) + 
+  theme(axis.title = element_text(size = 5),
+        axis.text.x = element_text(size = 5), 
+        axis.text.y = element_text(size = 5))
+
 
 install.packages("cowplot")
 .libPaths(c("C:/Users/ale097/Data School/Packages"))
@@ -340,18 +355,69 @@ q2_plot <- ggplot(data = tidy_data_q1) +
                             y = Temp_min, 
                             colour = Solar_exposure, 
                             alpha = Rainfall)) +
-  theme(legend.text = element_text(size = 2), legend.title = element_text(size = 2))
+  theme(legend.text = element_text(size = 5), 
+        legend.title = element_text(size = 5),
+        axis.title = element_text(size = 5), 
+        axis.text.x = element_text(size = 5), 
+        axis.text.y = element_text(size = 5), 
+        legend.key.height = unit("0.5", "cm"))
+  
+
+        
+#legend.position = c(0.95, 0.95),
+#legend.justification = c("right", "bottom"))
 
 
-
-ggsave(filename = "Results/q2.png", plot = q2_plot, width = 15, height = 10, dpi = 600, units = "cm")
+ggsave(filename = "Results/q2.png", plot = q2_plot, 
+       width = 15, height = 15, dpi = 600, units = "cm")
 
 #Question 3
 #Take four plots and save them as a figure 
 
 
 q3_plot <- plot_grid(plot_Temp_min, plot_Rainfall, 
-                     plot_Solar_exposure, q2_plot, 
-                     rel_heights = c(1, 3))
+                     plot_Solar_exposure, q2_plot)
 
-ggsave(filename = "Results/q3.png", plot = q3_plot, width = 15, height = 10, dpi = 600, units = "cm")
+ggsave(filename = "Results/q3.png", plot = q3_plot, width = 15, height = 15, dpi = 600, units = "cm")
+
+#Question 4 
+#Calculate the average monthly rainfall for each station. Produce a line 
+#to visualise this data and the state each station is in. 
+
+Rainfall_Month_Station <- BOM_data %>% 
+  separate(col = Temp_min_max, into = c("Temp_min", "Temp_max"), sep ="/") %>% 
+  filter(Temp_min != "-") %>% 
+  filter(Temp_max != "-") %>% 
+  filter(Rainfall != "-") %>%
+  filter(Solar_exposure !="-") %>%
+  mutate(Temp_min = as.numeric(Temp_min), 
+         Temp_max = as.numeric(Temp_max), 
+         Rainfall = as.numeric(Rainfall), 
+         Solar_exposure = as.numeric(Solar_exposure)) %>% 
+  group_by(Month, Station_number) %>% 
+  summarise(Average_rainfall = mean(Rainfall))
+
+BOM_stations
+
+state_stations <- BOM_stations %>% 
+  gather(key = "Station_number", value = "values", -info) %>% 
+  filter(info == "state") %>% 
+  mutate(Station_number = as.numeric(Station_number)) %>% 
+  select(-info)
+
+q4 <- left_join(Rainfall_Month_Station, state_stations, by = "Station_number")
+
+colnames(q4)[colnames(q4)=="values"] <- "state"
+
+q4
+
+q4_plot <- ggplot(data = q4) +
+  geom_line( mapping = aes(x = Month, 
+                            y = Average_rainfall, 
+                            group = Station_number)) +
+  facet_wrap(~ state)
+
+ggsave(filename = "Results/q4.png", plot = q4_plot, width = 15, height = 15, dpi = 600, units = "cm")
+
+
+         
