@@ -159,6 +159,17 @@ Station_number_state <-
   mutate(Station_number_numeric = as.numeric(Station_number)) %>% 
   select(-Station_number)
 
+#Try using a gather and spread method from Stephen 
+Station_number_state2 <- 
+  BOM_stations %>% 
+  filter(info == "state") %>% 
+  gather(key = "Station_number", value = "state", -info) %>% 
+  select(-info) %>% 
+  mutate(Station_number_numeric = as.numeric(Station_number)) %>% 
+  select(-Station_number)
+
+
+
 #Station_number_Mean_temp_diff data frame needs same column name to join
 
 names(Station_number_Mean_temp_diff)[1]<-"Station_number_numeric"
@@ -170,7 +181,13 @@ Challenge3 <-
   group_by(state) %>% 
   summarise(Mean_temp_diff = mean(Mean_temp_diff)) %>% 
   arrange(Mean_temp_diff)
-  
+
+Challenge3_2 <- 
+  left_join(Station_number_state2, Station_number_Mean_temp_diff, by = "Station_number_numeric") %>%
+  group_by(state) %>% 
+  summarise(Mean_temp_diff = mean(Mean_temp_diff)) %>% 
+  arrange(Mean_temp_diff)  
+
 write_csv(Challenge3,"Results/Challenge3.csv") 
 
 #Answer is Victoria!
@@ -204,3 +221,137 @@ Challenge4 <-
 View(Challenge4)
 
 #Answer is eastmost, by a whistle!
+
+
+#Below is Stephen's answer to Q3
+# Q3: Which state saw the lowest average daily temperature difference? -----
+
+# State information does not exist in the BOM_data.csv file. It is in the BOM_stations.csv file. We
+# will need to join these two data frames together to use them. But BOM_stations.csv has
+# the station identifiers as column headers, while BOM_data.csv has them as the values in a column.
+# We will need to tidy BOM_stations.csv with a gather and spread before we can join it.
+
+# We want to take the column names and store them in a new column called "Station_number" to match 
+# how they are named in the BOM_data data frame. We will create a new column called "values" to store 
+# all the information that used to be stored in the columns under each station number. By default we 
+# would gather up the data from *all* columns doing this, but we want to do it for everything but the 
+# info column, so we can exclude that with '-info'
+
+stations_very_long <- BOM_stations %>% 
+  gather(key = "Station_number", value = "values", -info) 
+
+# Eg of structure:
+# A tibble: 140 x 3
+# info  Station_number values                
+# <chr> <chr>          <chr>                 
+#  elev  9194           14                    
+#  end   9194           2018                  
+#  lat   9194           -32.2208           
+
+# We now want to restructure the data frame again. This time creating new columns with names from the 
+# current info column and the contents of the new columns coming from the current 'values' column
+# This is the reverse of a gather step and so is a spread
+
+stations_tidy <- stations_very_long %>% 
+  spread(key = info, value = values)
+
+# Eg. of structure:
+# A tibble: 20 x 8
+# Station_number elev  end   lat      lon      name                              start state
+# <chr>          <chr> <chr> <chr>    <chr>    <chr>                             <chr> <chr>
+#  14825          88.5  2018  -16.403  131.0145 VICTORIA RIVER DOWNS              1885  NT   
+#  14909          416   2018  -13.3275 133.0861 CENTRAL ARNHEM PLATEAU            2003  NT   
+#  22050          41.1  2018  -33.9703 137.6628 KADINA AWS                        2005  SA   
+
+# Try to join the two together now. Both have a "Station_number" column to join on
+# But this line gives an error:
+
+#BOM_combined <- left_join(BOM_data, stations_tidy)
+#
+#Error: Can't join on 'Station_number' x 'Station_number' because of incompatible types (character / numeric)
+
+# So we need to convert them to the same data type. A slightly dangerous method is to just overwrite
+# the column in the stations_tidy data frame. It's unlikely to be an issue in this case as we are
+# never going to need the station numbers as a character
+
+stations_tidy <- mutate(stations_tidy, Station_number = as.numeric(Station_number))
+
+#Join the two together properly now. Both have a "Station_number" column to join on
+#This brings the station metadata (including state) into our data frame with the meterological measurements
+BOM_with_temps <- BOM_data %>% 
+  separate(Temp_min_max, into = c("t_min", "t_max"), sep = "/") 
+BOM_combined <- left_join(BOM_with_temps, stations_tidy)
+
+# Now can run the same analysis as for Q2. Only differences are that we will group by state instead
+# of month
+q3_ans <- BOM_combined %>% 
+  mutate(t_diff = as.numeric(t_max) - as.numeric(t_min)) %>%
+  filter(!is.na(t_diff)) %>% 
+  group_by(state) %>% 
+  summarise(avg_t_diff = mean(t_diff)) %>% 
+  arrange(avg_t_diff)
+
+#Print it to the screen if running in RStudio
+#Can see that the QLD has the lowest average differences between min and max temperatures (7.36)
+q3_ans
+
+
+write_csv(q3_ans, "results/q3_avg_tempdiff_by_state.csv")
+
+#Question 1
+#For the Perth Station (9225), produce three scatter plots showing the relationship 
+#between the maximun temperature and each other measurement recorded 
+#(min temp, rainfall and solar exposure)
+
+tidy_data_q1 <- BOM_data %>% 
+  separate(col = Temp_min_max, into = c("Temp_min", "Temp_max"), sep ="/") %>% 
+  filter(Temp_min != "-") %>% 
+  filter(Temp_max != "-") %>% 
+  filter(Rainfall != "-") %>%
+  filter(Solar_exposure !="-") %>% 
+  select(-Year, -Month, -Day) %>% 
+  filter(Station_number == "9225") %>% 
+  mutate(Temp_min = as.numeric(Temp_min), Temp_max = as.numeric(Temp_max), Rainfall = as.numeric(Rainfall), Solar_exposure = as.numeric(Solar_exposure))
+
+
+plot_Temp_min <- ggplot(data = tidy_data_q1,
+                mapping = aes(x = Temp_max, y = Temp_min)) + geom_point(alpha = 0.2)
+plot_Rainfall <- ggplot(data = tidy_data_q1,
+                mapping = aes(x = Temp_max, y = Rainfall)) + geom_point(alpha = 0.2) 
+plot_Solar_exposure <- ggplot(data = tidy_data_q1,
+                mapping = aes(x = Temp_max, y = Solar_exposure)) + geom_point(alpha = 0.2)
+
+install.packages("cowplot")
+.libPaths(c("C:/Users/ale097/Data School/Packages"))
+library(cowplot)
+
+
+q1_plot <- plot_grid(plot_Temp_min, plot_Rainfall, plot_Solar_exposure)
+
+ggsave(filename = "Results/q1.png", plot = q1_plot, width = 12, height = 10, dpi = 300, units = "cm")
+
+#Question 2
+#Display these four measurements for the Perth station in one plot using
+#additonal aesthetic mappings 
+
+
+q2_plot <- ggplot(data = tidy_data_q1) +
+  geom_point( mapping = aes(x = Temp_max, 
+                            y = Temp_min, 
+                            colour = Solar_exposure, 
+                            alpha = Rainfall)) +
+  theme(legend.text = element_text(size = 2), legend.title = element_text(size = 2))
+
+
+
+ggsave(filename = "Results/q2.png", plot = q2_plot, width = 15, height = 10, dpi = 600, units = "cm")
+
+#Question 3
+#Take four plots and save them as a figure 
+
+
+q3_plot <- plot_grid(plot_Temp_min, plot_Rainfall, 
+                     plot_Solar_exposure, q2_plot, 
+                     rel_heights = c(1, 3))
+
+ggsave(filename = "Results/q3.png", plot = q3_plot, width = 15, height = 10, dpi = 600, units = "cm")
